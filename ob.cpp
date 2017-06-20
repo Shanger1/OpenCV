@@ -51,11 +51,8 @@ void createTrackbars(){
     createTrackbar( "V_MIN", trackbarWindowName, &V_MIN, V_MAX, on_trackbar );
     createTrackbar( "V_MAX", trackbarWindowName, &V_MAX, V_MAX, on_trackbar );
 
-
 }
 void drawObject(int x, int y,Mat &frame){
-
-	//uzycie funkcji opencv do rysowania celownika
 
 	circle(frame,Point(x,y),20,Scalar(0,255,0),2);
     if(y-25>0)
@@ -76,81 +73,53 @@ void drawObject(int x, int y,Mat &frame){
 }
 void morphOps(Mat &thresh){
 
-
-
 	Mat erodeElement = getStructuringElement( MORPH_RECT,Size(3,3));
 	Mat dilateElement = getStructuringElement( MORPH_RECT,Size(8,8));
 
 	erode(thresh,thresh,erodeElement);
 	erode(thresh,thresh,erodeElement);
 
-
 	dilate(thresh,thresh,dilateElement);
 	dilate(thresh,thresh,dilateElement);
-	
-
 
 }
 void trackFilteredObject(int &x, int &y, Mat threshold, Mat &cameraFeed){
 
 	Mat temp;
 	threshold.copyTo(temp);
-	//dwa wektory potrzebne do wyjscia findcountours
+
 	vector< vector<Point> > contours;
 	vector<Vec4i> hierarchy;
-	//znajdz kontury
+
 	findContours(temp,contours,hierarchy,CV_RETR_CCOMP,CV_CHAIN_APPROX_SIMPLE );
 	double refArea = 0;
 	bool objectFound = false;
+
 	if (hierarchy.size() > 0) {
 		int numObjects = hierarchy.size();
-        //jesli wieksze to szum
         if(numObjects<MAX_NUM_OBJECTS){
 			for (int index = 0; index >= 0; index = hierarchy[index][0]) {
-
 				Moments moment = moments((cv::Mat)contours[index]);
 				double area = moment.m00;
-
-				
                 if(area>MIN_OBJECT_AREA && area<MAX_OBJECT_AREA && area>refArea){
 					x = moment.m10/area;
 					y = moment.m01/area;
 					objectFound = true;
 					refArea = area;
 
-					
-					VideoCapture cap(0); 
-
-
-					int iLastX = -1; 
- 					int iLastY = -1;
-
-					
- 					Mat imgTmp;
- 					cap.read(imgTmp); 
-
-  					
- 					Mat imgLines = Mat::zeros( imgTmp.size(), CV_8UC3 );;
-
-					if (iLastX >= 0 && iLastY >= 0 && x >= 0 && y >= 0)
-   					{
-    				line(imgLines, Point(x, y), Point(iLastX, iLastY), Scalar(0,0,255), 2);
-   					}
-
-    				iLastX = x;
-   					iLastY = y;
   				}
+
 				else objectFound = false;
 
-
 			}
-			//jak znajdzie to rysuj
+
 			if(objectFound ==true){
 				putText(cameraFeed,"Tracking Object",Point(0,50),2,1,Scalar(0,255,0),2);
 				
 				drawObject(x,y,cameraFeed);}
 
-		}else putText(cameraFeed,"TOO MUCH NOISE! ADJUST FILTER",Point(0,50),1,2,Scalar(0,0,255),2);
+		}
+		else putText(cameraFeed,"TOO MUCH NOISE! ADJUST FILTER",Point(0,50),1,2,Scalar(0,0,255),2);
 	}
 }
 int main(int argc, char* argv[])
@@ -190,12 +159,9 @@ int main(int argc, char* argv[])
 		if(trackObjects)
 			trackFilteredObject(x,y,threshold,cameraFeed);
 
-		 
 		imshow(windowName2,threshold);
 		
 		imshow(windowName,cameraFeed);
-		
-		
 
 		waitKey(30);
 	}
